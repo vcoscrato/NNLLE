@@ -4,15 +4,30 @@ from NNLLE import amazon_models
 import matplotlib
 from matplotlib import pyplot as plt
 matplotlib.rcParams['text.usetex'] = True
+models = list(amazon_models.NN_fixed, amazon_models.NN_varying, amazon_models.NN_none, amazon_models.NN_both, amazon_models.lle)
 
 # Example 2
-print(amazon_models.output)
+output = pd.DataFrame(data=0, index=('NN_fixed', 'NN_varying', 'NN_none', 'NN_both', 'LLE'), columns=('MSE', 'EP_MSE', 'MAE', 'EP_MAE', 'Time'))
+output.loc['NN_fixed'] = models[0].metrics
+output.loc['NN_varying'] = models[1].metrics
+output.loc['NN_none'] = models[2].NN_none.metrics
+output.loc['NN_both'] = models[3].NN_both.metrics
+output.loc['NN_varying'] = models[4].lle.metrics
+print(output)
+
 
 # Example 3
 obs = 42
-sample_obs = amazon_models.amazon['Text'][amazon_models.y_test.index[obs]]
+sample_text = amazon_models.amazon['Text'][amazon_models.y_test.index[obs]]
+non_zero = amazon_models.x_test[obs, :] != 0
 
-non_zero_free = amazon_models.x_test[obs, :] != 0
+thetas = np.array((len(models), np.sum(non_zero)))
+features = amazon_models.features[non_zero]
+for index, model in enumerate(models[0:4]):
+    thetas[index, :] = model.get_thetas(amazon_models.x_test[obs][non_zero])
+thetas[4, :] = models[4].thetas[42, non_zero]
+
+
 thetas_free = amazon_models.thetas_free[obs, non_zero_free][np.argsort(amazon_models.thetas_free[obs, non_zero_free])]
 features_free = amazon_models.features[non_zero_free][np.argsort(amazon_models.thetas_free[obs, non_zero_free])]
 
