@@ -9,7 +9,6 @@ import time
 import pickle
 import os
 
-
 # Data
 amazon = pd.read_csv('/home/vcoscrato/Datasets/amazon fine foods.csv')[0:30000]
 bow = CountVectorizer(stop_words='english', min_df=0.02, max_df=0.5)
