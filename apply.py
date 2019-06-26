@@ -38,8 +38,7 @@ def apply(n_grid, NN_arch, LLE_var):
                 fixed_theta0=False,
                 dataloader_workers=0).fit(x_train[0:int(n*0.8)], y_train[0:int(n*0.8)])
             score = mse(model.predict(x_test[0:int(n/5)]), y_test[0:int(n/5)])
-            if score < MSE[0, index_arch, index_n]:
-                MSE[0, index_arch, index_n] = score
+            MSE[0, index_arch, index_n] = score
             t[0, index_arch, index_n] += time() - t0
 
             t0 = time()
@@ -63,8 +62,7 @@ def apply(n_grid, NN_arch, LLE_var):
             print('Current var:', var)
             model = LLE().fit(x_train[0:int(n*0.8)], y_train[0:int(n*0.8)])
             score = mse(model.predict(x_test[0:int(n/5)], var), y_test[0:int(n/5)])
-            if score < MSE[2, index_arch, index_n]:
-                MSE[2, index_var, index_n] = score
+            MSE[2, index_var, index_n] = score
             t[2, index_var, index_n] += time() - t0
 
     print(MSE, t)
