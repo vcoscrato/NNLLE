@@ -13,7 +13,7 @@ from matplotlib import pyplot as plt
 from matplotlib import gridspec
 matplotlib.rcParams['text.usetex'] = True
 
-'''
+
 amazon = pd.read_csv('/home/vcoscrato/Datasets/amazon fine foods.csv')[0:200000]
 bow = CountVectorizer(stop_words='english', min_df=0.02, max_df=0.5)
 x = bow.fit_transform(amazon['Text']).toarray()
@@ -75,10 +75,10 @@ def apply(n_grid, NN_arch, LLE_var):
 
     print(MSE, t)
     return MSE, t
-'''
+
 
 ngrid_ = [1000, 2500, 5000, 10000, 20000, 50000, 100000, 200000]
-#output = apply(ngrid_, NN_arch = [[1, 100], [3, 100], [5, 100]], LLE_var = [0.1, 1, 10])
+output = apply(ngrid_, NN_arch = [[1, 100], [3, 100], [5, 100]], LLE_var = [0.1, 1, 10])
 
 with open('results/LLE vs Fixed vs Varying.pkl', 'rb') as file:
    	output = pickle.load(file)
@@ -101,7 +101,7 @@ right.plot(output[0][0, subset], 'r-', label=r'NNLLE')
 right.plot(output[0][2, subset], 'b-', label=r'LLE')
 right.set(xlabel=r'Sample size $(\times10^3)$', ylabel='MSE', xticks=range(len([ngrid[i] for i in subset])), xticklabels=[ngrid[i] for i in subset])
 f.tight_layout()
-f.savefig('img/LLE vs Varying.pdf')
+f.savefig('img/LLE_vs_Varying.pdf')
 
 #Fixed vs Varying
 f = plt.figure()
@@ -120,7 +120,7 @@ right.plot(output[0][0, subset], 'r-', label=r'Varying $\theta_0$')
 right.plot(output[0][1, subset], 'g-', label=r'Fixed $\theta_0$')
 right.set(xlabel=r'Sample size $(\times10^3)$', ylabel='MSE', xticks=range(len([ngrid[i] for i in subset])), xticklabels=[ngrid[i] for i in subset])
 f.tight_layout()
-f.savefig('img/Fixed vs Varying.pdf')
+f.savefig('img/Fixed_vs_Varying.pdf')
 
 
 
