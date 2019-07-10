@@ -125,7 +125,7 @@ ax[1, 1].set_ylabel(r'$\theta_1(x)$')
 ax[1, 1].set_title(r'$\theta_1(x)$ on LLE')
 ax[1, 1].legend()
 f.tight_layout()
-f.savefig('img/thetas_kernel_feature_relevance.pdf')
+f.savefig('img/thetas kernel feature relevance.pdf')
 
-np.savetxt('results/kernel_feature_relevance.txt', scores, delimiter=',')
+np.savetxt('results/kernel feature relevance.txt', scores, delimiter=',')
 
