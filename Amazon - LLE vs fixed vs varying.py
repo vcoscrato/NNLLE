@@ -10,7 +10,6 @@ import pickle
 import os
 import matplotlib
 from matplotlib import pyplot as plt
-from matplotlib import gridspec
 matplotlib.rcParams['text.usetex'] = True
 
 

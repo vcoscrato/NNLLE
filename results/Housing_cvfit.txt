@@ -1,0 +1,8 @@
+[[NNPredict(batch_initial=300, batch_max_size=1000, batch_step_epoch_expon=2.0,
+          batch_step_multiplier=1.4, batch_test_size=2000, convolutional=False,
+          dataloader_workers=0, es=True, es_give_up_after_nepochs=500,
+          es_splitter_random_state=0, es_validation_set_size=None,
+          fixed_theta0=True, gpu=False, hidden_size=100, nepoch=200,
+          nn_weight_decay=0, num_layers=5, penalization_thetas=0,
+          penalization_variable_theta0=0, scale_data=True, varying_theta0=False,
+          verbose=0), 6.306068429494123, [5, 100], 618.7810187339783], [LLE(), 7.615216495886423, 50, 0.26299166679382324]]
