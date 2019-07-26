@@ -18,48 +18,9 @@ x = data.iloc[:, :13]
 y = data.iloc[:, 13]
 x_train, x_test, y_train, y_test = train_test_split(x, y, test_size=0.2, shuffle=False, random_state=0)
 
-def cvfit(NN_layers, NN_size, LLE_var):
-	output = [[0, np.infty, [0, 0], 0], [0, np.infty, 0, 0]]
-	for layers in NN_layers:
-		print('Corrent layers:', layers)
-		for size in NN_size:
-			print('Current size:', size)
-			t0 = time()
-			model = NNPredict(
-				verbose=0,
-                es=True,
-                es_give_up_after_nepochs=500,
-                hidden_size=size,
-                num_layers=layers,
-                gpu=False,
-                scale_data=True,
-                varying_theta0=False,
-                fixed_theta0=True,
-                dataloader_workers=0).fit(x_train, y_train)
-			score = mse(model.predict(x_test), y_test)
-			if score < output[0][1]:
-				output[0][0] = model
-				output[0][1] = score
-				output[0][2] = [layers, size]
-			output[0][3] += time() - t0
-
-	for var in LLE_var:
-		print('Current var:', var)
-		t0 = time()
-		model = LLE().fit(x_train, y_train)
-		score = mse(model.predict(x_test, var), y_test)
-		if score < output[1][1]:
-			output[1][0] = model
-			output[1][1] = score
-			output[1][2] = var
-		output[1][3] += time() - t0
-
-	return output
-
 output = cvfit(NN_layers=[1, 2, 3, 5], NN_size=[100, 250, 500], LLE_var=[0.1, 0.5, 1, 5, 10, 50, 100])
 with open('results/Housing_cvfit.txt', 'w') as f:
 	print(output, file=f)
-
 
 def cvlambda(penal_grid):
 	output = np.zeros((len(penal_grid)+1, 3))
@@ -106,6 +67,6 @@ botright = plt.subplot2grid((2, 2), (1, 1))
 botright.plot(penal_grid, output[:, 2])
 botright.set(xlabel=r'$\lambda$', ylabel='Adjust time')
 f.tight_layout()
-f.savefig('img/Boston_housing.pdf')
+f.savefig('img/housing_cvlambda.pdf')
 
 
