@@ -1,4 +1,4 @@
-from nnlocallinear import NNPredict, LLE
+from nnlocallinear import NLS, LLS
 import numpy as np
 import matplotlib
 from matplotlib import pyplot as plt
@@ -12,11 +12,11 @@ x = np.linspace(-5, 5, n).reshape(-1, 1)
 y = x**2 + np.random.normal(0, 3, n).reshape(-1 ,1)
 x_train, x_test, y_train, y_test = train_test_split(x, y, test_size=0.2, random_state=0)
 scores = np.zeros((2, 3))
-#indexes: (nnlle or lle, #irrelevant features, theta0 or theta1, instance)
+#indexes: (NLS or LLS, #irrelevant features, theta0 or theta1, instance)
 thetas = np.empty((2, 3, 2, len(y)))
 
 #0 features
-nn = NNPredict(
+nn = NLS(
     verbose=0,
     es=True,
     es_give_up_after_nepochs=500,
@@ -29,11 +29,11 @@ nn = NNPredict(
     dataloader_workers=0).fit(x_train, y_train)
 best = np.infty
 for var in [0.01, 0.05, 0.1, 0.5, 1, 5, 10]: 
-    ll = LLE(var).fit(x_train, y_train.reshape(-1))
+    ll = LLS(var).fit(x_train, y_train.reshape(-1))
     if ll.score(x_test, y_test.reshape(-1)) < best:
         best = ll.score(x_test, y_test.reshape(-1))
         var_best = var
-ll = LLE(var_best).fit(x_train, y_train.reshape(-1))
+ll = LLS(var_best).fit(x_train, y_train.reshape(-1))
 scores[:, 0] = [nn.score(x_test, y_test), ll.score(x_test, y_test.reshape(-1))]
 
 #5 features
@@ -42,7 +42,7 @@ for i in range(0, 5):
     np.random.shuffle(x2)
     x = np.hstack((x, x2))
 x_train, x_test, y_train, y_test = train_test_split(x, y, test_size=0.2, random_state=0)
-nn = NNPredict(
+nn = NLS(
     verbose=0,
     es=True,
     es_give_up_after_nepochs=500,
@@ -54,11 +54,11 @@ nn = NNPredict(
     fixed_theta0=False,
     dataloader_workers=0).fit(x_train, y_train)
 for var in [0.01, 0.05, 0.1, 0.5, 1, 5, 10]: 
-    ll = LLE(var).fit(x_train, y_train.reshape(-1))
+    ll = LLS(var).fit(x_train, y_train.reshape(-1))
     if ll.score(x_test, y_test.reshape(-1)) < best:
         best = ll.score(x_test, y_test.reshape(-1))
         var_best = var
-ll = LLE(var_best).fit(x_train, y_train.reshape(-1))
+ll = LLS(var_best).fit(x_train, y_train.reshape(-1))
 scores[:, 1] = [nn.score(x_test, y_test), ll.score(x_test, y_test.reshape(-1))]
 
 #50 features
@@ -67,7 +67,7 @@ for i in range(0, 45):
     np.random.shuffle(x2)
     x = np.hstack((x, x2))
 x_train, x_test, y_train, y_test = train_test_split(x, y, test_size=0.2, random_state=0)
-nn = NNPredict(
+nn = NLS(
     verbose=0,
     es=True,
     es_give_up_after_nepochs=500,
@@ -79,11 +79,11 @@ nn = NNPredict(
     fixed_theta0=False,
     dataloader_workers=0).fit(x_train, y_train)
 for var in [0.01, 0.05, 0.1, 0.5, 1, 5, 10]: 
-    ll = LLE(var).fit(x_train, y_train.reshape(-1))
+    ll = LLS(var).fit(x_train, y_train.reshape(-1))
     if ll.score(x_test, y_test.reshape(-1)) < best:
         best = ll.score(x_test, y_test.reshape(-1))
         var_best = var
-ll = LLE(var_best).fit(x_train, y_train.reshape(-1))
+ll = LLS(var_best).fit(x_train, y_train.reshape(-1))
 scores[:, 2] = [nn.score(x_test, y_test), ll.score(x_test, y_test.reshape(-1))]
 
 #Output

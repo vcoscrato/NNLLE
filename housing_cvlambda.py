@@ -1,5 +1,5 @@
 import numpy as np
-from nnlocallinear import NNPredict, LLE
+from nnlocallinear import NLS, LLS
 from sklearn.model_selection import train_test_split
 from sklearn.metrics import mean_squared_error as mse
 from sklearn.metrics import mean_absolute_error as mae
@@ -18,16 +18,12 @@ x = data.iloc[:, :13]
 y = data.iloc[:, 13]
 x_train, x_test, y_train, y_test = train_test_split(x, y, test_size=0.2, shuffle=False, random_state=0)
 
-output = cvfit(NN_layers=[1, 2, 3, 5], NN_size=[100, 250, 500], LLE_var=[0.1, 0.5, 1, 5, 10, 50, 100])
-with open('results/Housing_cvfit.txt', 'w') as f:
-	print(output, file=f)
-
 def cvlambda(penal_grid):
 	output = np.zeros((len(penal_grid)+1, 3))
 	print(output.shape)
 	print('Current penalty', 0)
 	t0 = time()
-	model = NNPredict(
+	model = NLS(
 		verbose=0,
 		es=True,
 		es_give_up_after_nepochs=500,

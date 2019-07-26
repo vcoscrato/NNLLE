@@ -1,5 +1,5 @@
 import numpy as np
-from nnlocallinear import NNPredict, LLE
+from nnlocallinear import NLS, LLS
 from sklearn.model_selection import train_test_split
 from sklearn.metrics import mean_squared_error, mean_absolute_error
 from sklearn.feature_extraction.text import CountVectorizer
@@ -18,18 +18,18 @@ from matplotlib import pyplot as plt
 matplotlib.rcParams['text.usetex'] = True
 
 
-def cvfit(NN_layers, NN_size, es_epochs, LLE_var, n_estimators):
+def cvfit(NN_layers, NN_size, es_epochs, LLS_var, n_estimators):
 	output = []
 
-	#NNLLE
+	#NLS
 	best_mse = np.infty
 	t0 = time()
-	print('NNLLEs...')
+	print('NLS\'s...')
 	for layers in NN_layers:
 		print('Current layers:', layers)
 		for size in NN_size:
 			print('Current size:', size)
-			model = NNPredict(
+			model = NLS(
 				verbose=0,
                 es=True,
                 es_give_up_after_nepochs=es_epochs,
@@ -54,7 +54,7 @@ def cvfit(NN_layers, NN_size, es_epochs, LLE_var, n_estimators):
 	#NN
 	best_mse = np.infty
 	t0 = time()
-	print('NNs...')
+	print('NN\'s...')
 	for layers in NN_layers:
 		print('Current layers:', layers)
 		for size in NN_size:
@@ -79,13 +79,13 @@ def cvfit(NN_layers, NN_size, es_epochs, LLE_var, n_estimators):
 	mae_std = np.std(abs(best_pred.flatten()-y_test)) / (len(y_test)**(1/2))
 	output.append([best_model, best_mse, mse_std, mae, mae_std, time()-t0])
 
-	#LLE
+	#LLS
 	best_mse = np.infty
 	t0 = time()
-	print('LLEs...')
-	for var in LLE_var:
+	print('LLS\'s...')
+	for var in LLS_var:
 		print('Current var:', var)
-		model = LLE(kernel_var=var).fit(x_train, y_train)
+		model = LLS(kernel_var=var).fit(x_train, y_train)
 		pred = model.predict(x_test)
 		mse = mean_squared_error(y_test, pred)
 		if mse < best_mse:
@@ -125,7 +125,7 @@ data = data.sample(frac=1, random_state=0)
 x = data.iloc[:, :13]
 y = data.iloc[:, 13]
 x_train, x_test, y_train, y_test = train_test_split(x, y, test_size=0.2, shuffle=False, random_state=0)
-output = cvfit(NN_layers=[1, 3, 5], NN_size=[100, 250, 500], es_epochs=500, LLE_var=[0.1, 1, 10, 100, 1000], n_estimators=[10, 50, 100])
+output = cvfit(NN_layers=[1, 3, 5], NN_size=[100, 250, 500], es_epochs=500, LLS_var=[0.1, 1, 10, 100, 1000], n_estimators=[10, 50, 100])
 with open('results/housing.pkl', 'wb') as f:
 	pickle.dump(output, f, pickle.HIGHEST_PROTOCOL)
 
@@ -136,7 +136,7 @@ data = data.sample(frac=1, random_state=0)
 x = data.iloc[:, range(0, data.shape[1] - 1)].values
 y = data.iloc[:, -1].values
 x_train, x_test, y_train, y_test = train_test_split(x, y, test_size=0.2, shuffle=False, random_state=0)
-output = cvfit(NN_layers=[1, 3, 5], NN_size=[100, 250, 500], es_epochs=100, LLE_var=[0.1, 1, 10, 100, 1000], n_estimators=[10, 50, 100])
+output = cvfit(NN_layers=[1, 3, 5], NN_size=[100, 250, 500], es_epochs=100, LLS_var=[0.1, 1, 10, 100, 1000], n_estimators=[10, 50, 100])
 with open('results/superconductivity.pkl', 'wb') as f:
 	pickle.dump(output, f, pickle.HIGHEST_PROTOCOL)
 
@@ -146,7 +146,7 @@ data = pd.read_csv('/home/vcoscrato/Datasets/blog feedback.csv')
 x = data.iloc[:, range(0, data.shape[1] - 1)].values
 y = data.iloc[:, -1].values
 x_train, x_test, y_train, y_test = train_test_split(x, y, test_size=0.2, shuffle=False, random_state=0)
-output = cvfit(NN_layers=[1, 3, 5], NN_size=[100, 250, 500], es_epochs=100, LLE_var=[0.1, 1, 10, 100, 1000], n_estimators=[10, 50, 100])
+output = cvfit(NN_layers=[1, 3, 5], NN_size=[100, 250, 500], es_epochs=100, LLS_var=[0.1, 1, 10, 100, 1000], n_estimators=[10, 50, 100])
 with open('results/blog_feedback.pkl', 'wb') as f:
 	pickle.dump(output, f, pickle.HIGHEST_PROTOCOL)
 
@@ -169,9 +169,9 @@ for n in n_grid:
 	x_test = x_test_full[:int(n*0.2)]
 	y_test = y_test_full[:int(n*0.2)]
 	if n <= 10000:
-		output.append(cvfit(NN_layers=[1, 3, 5], NN_size=[100, 250, 500], es_epochs=500, LLE_var=[0.1, 1, 10, 100, 1000], n_estimators=[10, 50, 100]))
+		output.append(cvfit(NN_layers=[1, 3, 5], NN_size=[100, 250, 500], es_epochs=500, LLS_var=[0.1, 1, 10, 100, 1000], n_estimators=[10, 50, 100]))
 	else:
-		output.append(cvfit(NN_layers=[1, 3, 5], NN_size=[100, 250, 500], es_epochs=100, LLE_var=[0.1, 1, 10, 100, 1000], n_estimators=[10, 50, 100]))
+		output.append(cvfit(NN_layers=[1, 3, 5], NN_size=[100, 250, 500], es_epochs=100, LLS_var=[0.1, 1, 10, 100, 1000], n_estimators=[10, 50, 100]))
 
 with open('results/amazon.pkl', 'wb') as f:
 	pickle.dump(output, f, pickle.HIGHEST_PROTOCOL)
