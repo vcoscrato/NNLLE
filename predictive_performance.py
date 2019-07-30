@@ -126,7 +126,7 @@ x = data.iloc[:, :13]
 y = data.iloc[:, 13]
 x_train, x_test, y_train, y_test = train_test_split(x, y, test_size=0.2, shuffle=False, random_state=0)
 output = cvfit(NN_layers=[1, 3, 5], NN_size=[100, 250, 500], es_epochs=500, LLS_var=[0.1, 1, 10, 100, 1000], n_estimators=[10, 50, 100])
-with open('results/housing.pkl', 'wb') as f:
+with open('fitted/housing.pkl', 'wb') as f:
 	pickle.dump(output, f, pickle.HIGHEST_PROTOCOL)
 
 # Superconductivity
@@ -137,7 +137,7 @@ x = data.iloc[:, range(0, data.shape[1] - 1)].values
 y = data.iloc[:, -1].values
 x_train, x_test, y_train, y_test = train_test_split(x, y, test_size=0.2, shuffle=False, random_state=0)
 output = cvfit(NN_layers=[1, 3, 5], NN_size=[100, 250, 500], es_epochs=100, LLS_var=[0.1, 1, 10, 100, 1000], n_estimators=[10, 50, 100])
-with open('results/superconductivity.pkl', 'wb') as f:
+with open('fitted/superconductivity.pkl', 'wb') as f:
 	pickle.dump(output, f, pickle.HIGHEST_PROTOCOL)
 
 # Blog
@@ -147,7 +147,7 @@ x = data.iloc[:, range(0, data.shape[1] - 1)].values
 y = data.iloc[:, -1].values
 x_train, x_test, y_train, y_test = train_test_split(x, y, test_size=0.2, shuffle=False, random_state=0)
 output = cvfit(NN_layers=[1, 3, 5], NN_size=[100, 250, 500], es_epochs=100, LLS_var=[0.1, 1, 10, 100, 1000], n_estimators=[10, 50, 100])
-with open('results/blog_feedback.pkl', 'wb') as f:
+with open('fitted/blog_feedback.pkl', 'wb') as f:
 	pickle.dump(output, f, pickle.HIGHEST_PROTOCOL)
 
 # Amazon
@@ -158,7 +158,7 @@ x = bow.fit_transform(amazon['Text']).toarray()
 features = np.array(bow.get_feature_names())
 x = x[:, features != 'br']
 features = features[features != 'br']
-x_train_full, x_test_full, y_train_full, y_test_full = train_test_split(x, amazon['Score'], test_size=0.2, random_state=0)
+x_train_full, x_test_full, y_train_full, y_test_full = train_test_split(x, amazon['Score'], test_size=0.2, shuffle=False, random_state=0)
 
 n_grid = [1000, 2500, 5000, 10000, 25000, 50000, 100000]
 output = []
@@ -173,7 +173,7 @@ for n in n_grid:
 	else:
 		output.append(cvfit(NN_layers=[1, 3, 5], NN_size=[100, 250, 500], es_epochs=100, LLS_var=[0.1, 1, 10, 100, 1000], n_estimators=[10, 50, 100]))
 
-with open('results/amazon.pkl', 'wb') as f:
+with open('fitted/amazon.pkl', 'wb') as f:
 	pickle.dump(output, f, pickle.HIGHEST_PROTOCOL)
 
 n_grid = [1, 2.5, 5, 10, 25, 50, 100]
