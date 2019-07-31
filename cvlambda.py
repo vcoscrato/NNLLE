@@ -14,18 +14,17 @@ matplotlib.rcParams['text.usetex'] = True
 
 x = np.linspace(0, 2*np.pi, num=2000)
 y = np.sin(x)
-x_train, x_test, y_train, y_test = train_test_split(x.reshape(2000, 1), y, test_size=0.2, random_state=0)
-train = []
-train_grad = []
+x = x.reshape(2000, 1)
+x_train, x_test, y_train, y_test = train_test_split(x, y, test_size=0.2, random_state=0)
 test = []
 test_grad = []
-penal_grid = np.linspace(0.5, 2, num=4)
+penal_grid = np.linspace(0.2, 1, num=5)
 
 t0 = time()
 model = NLS(
 	verbose=2,
 	es=True,
-	es_give_up_after_nepochs=10,
+	es_give_up_after_nepochs=100,
 	hidden_size=250,
 	num_layers=3,
 	gpu=False,
@@ -34,42 +33,43 @@ model = NLS(
 	fixed_theta0=True,
 	penalization_thetas=0,
 	dataloader_workers=0).fit(x_train, y_train)
-pred, grad, trash = model.predict(x_train, pen_out = True)
-train.append(mse(pred, y_train))
-train_grad.append(grad.mean())
-pred, grad, trash = model.predict(x_test, pen_out = True)
+pred, grad, trash = model.predict(x_test, grad_out=True)
 test.append(mse(pred, y_test))
 test_grad.append(grad.mean())
-pred0 = model.predict(x.reshape(2000, 1))
+pred0 = model.predict(x)
+theta0 = model.get_thetas(x, net_scale=False)[2]
 for penal in penal_grid:
 	print('Current penalty', penal)
 	t0 = time()
 	model.penalization_thetas = penal
 	model.improve_fit(x_train, y_train)
-	pred, grad, trash = model.predict(x_train, pen_out = True)
-	train.append(mse(pred, y_train))
-	train_grad.append(grad.mean())
-	pred, grad, trash = model.predict(x_test, pen_out = True)
+	pred, grad, trash = model.predict(x_test, grad_out=True)
 	test.append(mse(pred, y_test))
 	test_grad.append(grad.mean())
-pred1 = model.predict(x.reshape(2000, 1))
+pred1 = model.predict(x)
+theta1 = model.get_thetas(x, net_scale=False)[2]
 
 penal_grid = [0] + penal_grid.tolist()
-f = plt.figure()
-topleft = plt.subplot2grid((2, 2), (0, 0))
+f = plt.figure(figsize=(6,6))
+topleft = plt.subplot2grid((3, 2), (0, 0))
 topleft.plot(penal_grid, test, 'b-')
-topleft.set(xlabel=r'$\lambda$', ylabel='MSE')
-topright = plt.subplot2grid((2, 2), (0, 1))
+topleft.set(xlabel='$\lambda$', ylabel='MSE', xticks=penal_grid)
+topright = plt.subplot2grid((3, 2), (0, 1), sharex=topleft)
 topright.plot(penal_grid, test_grad, 'b-')
 topright.set(xlabel=r'$\lambda$', ylabel='Average squared gradient')
-bot = plt.subplot2grid((2, 2), (1, 0), colspan=2)
-bot.plot(x, y, 'b-', label='True regression')
-bot.plot(x, pred0, 'r-', label='NLS ($\lambda=0$)')
-bot.plot(x, pred1, 'g-', label=r'NLS ($\lambda=2$)')
-bot.set(xlabel='x', ylabel='y')
+mid = plt.subplot2grid((3, 2), (1, 0), colspan=2)
+mid.plot(x, y, 'b-', label=r'y=sen(x)')
+mid.plot(x, pred0, 'r-', label=r'NLS ($\lambda=0$)')
+mid.plot(x, pred1, 'g-', label=r'NLS ($\lambda=1$)')
+mid.set(xlabel='x', ylabel='y', xticks=[0, np.pi/2, np.pi, 3*np.pi/2, 2*np.pi], xticklabels=['0', r'$\pi/2$', r'$\pi$', r'$3\pi/2$', r'$2\pi$'])
+mid.legend()
+bot = plt.subplot2grid((3, 2), (2, 0), colspan=2)
+bot.plot(x, theta0, 'r-', label=r'NLS ($\lambda=0$)')
+bot.plot(x, theta1, 'g-', label=r'NLS ($\lambda=1$)')
+bot.set(xlabel='x', ylabel=r'$\theta_1(x)$', xticks=[0, np.pi/2, np.pi, 3*np.pi/2, 2*np.pi], xticklabels=['0', r'$\pi/2$', r'$\pi$', r'$3\pi/2$', r'$2\pi$'])
 bot.legend()
 f.tight_layout()
-f.savefig('img/sin_toy_cvlambda2.pdf')
+f.savefig('img/sin_toy_cvlambda.pdf')
 
 
 
