@@ -46,8 +46,12 @@ class FourierSeries(object):
 if __name__ == '__main__':
     fs = FourierSeries()
     # fs.plot(x=fs.x_domain(0.001))
-    x_train = fs.x_domain(0.001)
-    # x_train = fs.x_domain(0.00001)
+#     x_train = fs.x_domain(0.001)
+#     Aqui esta o problema o fit depende muito 
+#     do numero de pontos, quando uso um grid fino, que me da mais pontos ele fita razoavel
+#     Mas mesmo assim nao consegui fitar a serie com 3 funcoes seno 
+#   fs = FourierSeries(coefficients=[1, 0.1, 0.01], frequencies=[1, 10, 100])
+    x_train = fs.x_domain(0.00001)
 
     y_train = fs.f(x_train)
     indices = np.random.permutation(len(y_train))
