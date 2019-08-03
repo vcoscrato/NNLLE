@@ -9,10 +9,8 @@ class FourierSeries(object):
     """
     Generate a sin series where
     f(x) = coefficients[0]*sin(frequencies[0]*x) + ...
-
     You can define the domain of the function using
     x_domain(delta_x, domain)
-
     """
     def __init__(self, coefficients=[1, 0.1], frequencies=[1, 10]):
         self.frequencies = np.array(frequencies)
@@ -79,4 +77,5 @@ if __name__ == '__main__':
 
     mse = metrics.mean_squared_error(y_train, y_pred)
     print(mse)
+
 
