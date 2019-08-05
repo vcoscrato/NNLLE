@@ -78,7 +78,7 @@ f.tight_layout()
 f.savefig('img/housing_cvlambda.pdf')
 
 f, ax = plt.subplots()
-f.figsize = [3.2, 4.8]
+f.set_size_inches(6.4, 2.4)
 ax.plot(lambda_grid, errors, 'b-')
 ax.set(xlabel='$\lambda$', ylabel='Average extension error', xticks=range(len(lambda_grid)), xticklabels=lambda_grid)
 f.tight_layout()
