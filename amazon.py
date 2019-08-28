@@ -3,6 +3,8 @@ import pandas as pd
 from pprint import pprint
 from time import time
 
+from nnlocallinear import NLS, LLS
+
 from sklearn.feature_extraction.text import TfidfTransformer
 from sklearn.linear_model import SGDClassifier
 from sklearn.model_selection import GridSearchCV
@@ -14,7 +16,6 @@ from sklearn.model_selection import StratifiedShuffleSplit
 
 from matplotlib import pyplot as plt
 
-from nnlocallinear import NLS, LLS
 
 
 class AmazonData(object):
@@ -88,7 +89,7 @@ class AmazonData(object):
 
 if __name__ == "__main__":
     data = AmazonData(
-        file='../data/amazon-fine-food-reviews/Reviews.csv'
+        file='/home/vcoscrato/Datasets/amazon fine foods.csv'
         , target='Score'
         , features='Text'
     )
