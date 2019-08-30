@@ -4,14 +4,14 @@
     es_splitter_random_state=0, es_validation_set_size=None, fixed_theta0=True,
     gpu=False, hidden_size=300, nepoch=200, nn_weight_decay=0, num_layers=5,
     penalization_thetas=0, penalization_variable_theta0=0, scale_data=True,
-    varying_theta0=False, verbose=0), 105.50056059639306, 8.126771392428715, 6.446914316217721, 0.17337851983579558, 4493.232062578201], [NNPredict(batch_initial=300, batch_max_size=1000, batch_step_epoch_expon=2.0,
+    varying_theta0=False, verbose=0), 197.71490076076236, 46.27813118145868, 4.205945517725617, 0.18535344978672738, 5257.893981218338], [NNPredict(batch_initial=300, batch_max_size=1000, batch_step_epoch_expon=2.0,
           batch_step_multiplier=1.4, batch_test_size=2000, convolutional=False,
           es=True, es_give_up_after_nepochs=100, es_splitter_random_state=0,
           es_validation_set_size=None, gpu=False, hidden_size=300, nepoch=200,
-          nn_weight_decay=0, num_layers=5, verbose=0), 145.59239468160135, 9.882249508843506, 7.814946959230738, 0.19933952851501957, 3609.941204071045], [LLS(kernel_var=1000), 173.41295269961302, 11.420421574010362, 8.29397897265365, 0.2217836672612347, 316.98016476631165], [RandomForestRegressor(bootstrap=True, criterion='mse', max_depth=None,
+          nn_weight_decay=0, num_layers=5, verbose=0), 5799.025859898529, 4031.588512336059, 4.248833738347046, 1.050351928641282, 3506.1457209587097], [LLS(kernel_var=1000), 722.5677297252186, 139.80515640951782, 6.336923774656007, 0.36087550632952525, 13420.680006504059], [RandomForestRegressor(bootstrap=True, criterion='mse', max_depth=None,
                       max_features='auto', max_leaf_nodes=None,
                       min_impurity_decrease=0.0, min_impurity_split=None,
                       min_samples_leaf=1, min_samples_split=2,
                       min_weight_fraction_leaf=0.0, n_estimators=100,
                       n_jobs=None, oob_score=False, random_state=None,
-                      verbose=0, warm_start=False), 81.6673461610839, 7.030254312825562, 5.038833251225754, 0.16266108883237643, 116.46440362930298]]
+                      verbose=0, warm_start=False), 149.9805934083616, 37.55684414271806, 2.335954291637116, 0.16607498016665748, 220.50976371765137]]

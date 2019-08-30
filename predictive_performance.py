@@ -114,7 +114,6 @@ def cvfit(x, y, NN_layers, NN_size, es_epochs, LLS_var, n_estimators):
 
 	return output
 
-"""
 # Housing
 print('Housing...')
 data = pd.read_csv('/home/vcoscrato/Datasets/housing.csv')
@@ -122,9 +121,9 @@ data = data.sample(frac=1, random_state=0)
 x = data.iloc[:, :13]
 y = data.iloc[:, 13]
 
-models = [NLS(verbose=0, es_give_up_after_nepochs=100, gpu=False, varying_theta0=False)]
+models = [NLS(verbose=0, es_give_up_after_nepochs=500, gpu=False, varying_theta0=False)]
 parameters = [{'hidden_size':[100, 300], 'num_layers':[1, 3, 5]}]
-models.append(NNPredict(verbose=0, es_give_up_after_nepochs=100, gpu=False))
+models.append(NNPredict(verbose=0, es_give_up_after_nepochs=500, gpu=False))
 parameters.append({'hidden_size':[100, 300], 'num_layers':[1, 3, 5]})
 models.append(LLS())
 parameters.append({'kernel_var':[0.1, 1, 10, 100, 1000]})
@@ -149,7 +148,6 @@ with open('fitted/housing.pkl', 'wb') as f:
 with open('results/housing.txt', 'w') as f:
     print(output[1], file=f)
 """
-
 # Superconductivity
 print('Superconductivity...')
 data = pd.read_csv('/home/vcoscrato/Datasets/superconductivity.csv')
@@ -172,7 +170,7 @@ with open('fitted/blog.pkl', 'wb') as f:
 	pickle.dump(output, f, pickle.HIGHEST_PROTOCOL)
 with open('results/blog.txt', 'w') as f:
     print(output, file=f)
-"""
+
 # Amazon
 print('Amazon...')
 amazon = pd.read_csv('/home/vcoscrato/Datasets/amazon fine foods.csv').sample(n=100000, random_state=0)
@@ -223,3 +221,6 @@ botleft.set(xlabel=r'Sample size $(\times10^3)$', ylabel='Fitting time', xticks=
 f.tight_layout()
 f.savefig('img/amazon_vary_n.pdf')
 """
+
+
+
