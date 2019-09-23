@@ -42,6 +42,7 @@ def cvfit(x, y, NN_layers, NN_size, es_epochs, LLS_var, n_estimators):
 			pred = model.predict(x_val)
 			mse = mean_squared_error(y_val, pred)
 			if mse < best_mse:
+			    best_mse = mse
 				best_model = model
 	best_pred = best_model.predict(x_test)
 	best_mse = mean_squared_error(y_test, best_pred)
@@ -68,6 +69,7 @@ def cvfit(x, y, NN_layers, NN_size, es_epochs, LLS_var, n_estimators):
 			pred = model.predict(x_val)
 			mse = mean_squared_error(y_val, pred)
 			if mse < best_mse:
+			    best_mse = mse
 				best_model = model
 	best_pred = best_model.predict(x_test)
 	best_mse = mean_squared_error(y_test, best_pred)
@@ -86,6 +88,7 @@ def cvfit(x, y, NN_layers, NN_size, es_epochs, LLS_var, n_estimators):
 		pred = model.predict(x_val)
 		mse = mean_squared_error(y_val, pred)
 		if mse < best_mse:
+			best_mse = mse
 			best_model = model
 	best_pred = best_model.predict(x_test)
 	best_mse = mean_squared_error(y_test, best_pred)
@@ -104,6 +107,7 @@ def cvfit(x, y, NN_layers, NN_size, es_epochs, LLS_var, n_estimators):
 		pred = model.predict(x_val)
 		mse = mean_squared_error(y_val, pred)
 		if mse < best_mse:
+			best_mse = mse
 			best_model = model
 	best_pred = best_model.predict(x_test)
 	best_mse = mean_squared_error(y_test, best_pred)
