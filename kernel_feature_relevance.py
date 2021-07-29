@@ -38,7 +38,7 @@ scores[:, 0] = [nn.score(x_test, y_test), ll.score(x_test, y_test.reshape(-1))]
 
 #5 features
 for i in range(0, 5):
-    x2 = np.linspace(-10, 10, n).reshape(-1, 1)
+    x2 = np.linspace(-5, 5, n).reshape(-1, 1)
     np.random.shuffle(x2)
     x = np.hstack((x, x2))
 x_train, x_test, y_train, y_test = train_test_split(x, y, test_size=0.2, random_state=0)
@@ -63,7 +63,7 @@ scores[:, 1] = [nn.score(x_test, y_test), ll.score(x_test, y_test.reshape(-1))]
 
 #50 features
 for i in range(0, 45):
-    x2 = np.linspace(-10, 10, n).reshape(-1, 1)
+    x2 = np.linspace(-5, 5, n).reshape(-1, 1)
     np.random.shuffle(x2)
     x = np.hstack((x, x2))
 x_train, x_test, y_train, y_test = train_test_split(x, y, test_size=0.2, random_state=0)
@@ -89,3 +89,14 @@ scores[:, 2] = [nn.score(x_test, y_test), ll.score(x_test, y_test.reshape(-1))]
 #Output
 np.savetxt('results/kernel feature relevance.txt', scores, delimiter=',')
 
+f, ax = plt.subplots(figsize=(5, 3), ncols=2)
+ax[0].plot(x[:, 0], y, 'ko', markersize=2)
+ax[0].set_xlabel('x')
+ax[0].set_ylabel('y')
+ax[0].set_title('Relevant feature')
+ax[1].plot(x[:, 1], y, 'ko', markersize=2)
+ax[1].set_xlabel('x')
+ax[1].set_ylabel('y')
+ax[1].set_title('Irrelevant feature')
+f.tight_layout()
+f.savefig('img/relevant_irrelevant.pdf')

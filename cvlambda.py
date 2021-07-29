@@ -24,8 +24,8 @@ t0 = time()
 model = NLS(
 	verbose=2,
 	es=True,
-	es_give_up_after_nepochs=100,
-	hidden_size=250,
+	es_give_up_after_nepochs=500,
+	hidden_size=500,
 	num_layers=3,
 	gpu=False,
 	scale_data=True,
@@ -66,7 +66,7 @@ mid.legend()
 bot = plt.subplot2grid((3, 2), (2, 0), colspan=2)
 bot.plot(x, theta0, 'r-', label=r'NLS ($\lambda=0$)')
 bot.plot(x, theta1, 'g-', label=r'NLS ($\lambda=1$)')
-bot.set(xlabel='x', ylabel=r'$\theta_1(x)$', xticks=[0, np.pi/2, np.pi, 3*np.pi/2, 2*np.pi], xticklabels=['0', r'$\pi/2$', r'$\pi$', r'$3\pi/2$', r'$2\pi$'])
+bot.set(xlabel='x', ylabel=r'$\beta_1(x)$', xticks=[0, np.pi/2, np.pi, 3*np.pi/2, 2*np.pi], xticklabels=['0', r'$\pi/2$', r'$\pi$', r'$3\pi/2$', r'$2\pi$'])
 bot.legend()
 f.tight_layout()
 f.savefig('img/sin_toy_cvlambda.pdf')
