@@ -1,8 +1,7 @@
 from __future__ import division
 
 from typing import Union, Iterable, Sized, Tuple
-import torch
-import torch.nn.functional as F
+from numpy.lib.function_base import append
 
 import torch
 import torch.nn as nn
@@ -24,92 +23,83 @@ from sklearn.preprocessing import StandardScaler
 import collections
 
 
-def truncated_normal_(tensor, mean: float = 0., std: float = 1.):
-    size = tensor.shape
-    tmp = tensor.new_empty(size + (4,)).normal_()
-    valid = (tmp < 2) & (tmp > -2)
-    ind = valid.max(-1, keepdim=True)[1]
-    tensor.data.copy_(tmp.gather(-1, ind).squeeze(-1))
-    tensor.data.mul_(std).add_(mean)
-
-
-class ActivationLayer(torch.nn.Module):
-    def __init__(self,
-                 in_features: int,
-                 out_features: int):
+class ExU(nn.Module):
+    def __init__(self, in_dim, out_dim):
         super().__init__()
-        self.weight = torch.nn.Parameter(torch.empty((in_features, out_features)))
-        self.bias = torch.nn.Parameter(torch.empty(in_features))
+        self.weight = nn.Parameter(torch.Tensor(in_dim, out_dim))
+        self.bias = nn.Parameter(torch.Tensor(in_dim))
+        self.init_params()
 
+    
+    def init_params(self):
+        self.weight = nn.init.normal_(self.weight, mean=4., std=.5)
+        self.bias = nn.init.normal_(self.bias, std=.5)
+
+    
     def forward(self, x):
-        raise NotImplementedError("abstract method called")
+        out = torch.matmul((x - self.bias), torch.exp(self.weight))
+        out = torch.clamp(out, 0, 1)
+        return out
 
 
-class ExULayer(ActivationLayer):
-    def __init__(self,
-                 in_features: int,
-                 out_features: int):
-        super().__init__(in_features, out_features)
-        truncated_normal_(self.weight, mean=4.0, std=0.5)
-        truncated_normal_(self.bias, std=0.5)
-
-    def forward(self, x):
-        return torch.clip((x - self.bias) @ torch.exp(self.weight), 0, 1)
-
-
-class ReLULayer(ActivationLayer):
-    def __init__(self,
-                 in_features: int,
-                 out_features: int):
-        super().__init__(in_features, out_features)
-        torch.nn.init.xavier_uniform_(self.weight)
-        truncated_normal_(self.bias, std=0.5)
-
-    def forward(self, x):
-        return F.relu((x - self.bias) @ self.weight)
-
-
-class FeatureNN(torch.nn.Module):
-    def __init__(self, shallow:bool):
+class ReLU(nn.Module):
+    def __init__(self, in_dim, out_dim):
         super().__init__()
-        if shallow:
-            self.layers = [ExULayer(1, 1024)]
-            self.linear = torch.nn.Linear(1024, 1, bias=False)
+        self.linear = nn.Linear(in_dim, out_dim)
+        self.init_params()
+
+
+    def init_params(self):        
+        nn.init.xavier_uniform_(self.linear.weight)
+        nn.init.normal_(self.linear.bias, std=.5)
+
+
+    def forward(self, x):
+        out = self.linear(x)
+        out = F.relu(out)
+        return out
+
+
+
+class FeatureNet(nn.Module):
+    def __init__(self, dropout_rate, use_exu):
+        super().__init__()
+        if use_exu:
+            layers = [ExU(1, 1024), nn.Dropout(dropout_rate), 
+                      nn.Linear(1024, 1, bias = False)]
         else:
-            self.layers = [ReLULayer(1, 64), ReLULayer(64, 64), ReLULayer(64, 32)]
-            self.linear = torch.nn.Linear(32, 1, bias=False)
-
-        self.dropout = torch.nn.Dropout(p=0)
-        torch.nn.init.xavier_uniform_(self.linear.weight)
+            layers = [ReLU(1, 64), nn.Dropout(dropout_rate),
+                      ReLU(64, 64), nn.Dropout(dropout_rate),
+                      ReLU(64, 32), nn.Dropout(dropout_rate),
+                      nn.Linear(32, 1, bias = False)]
+        self.layers = nn.Sequential(*layers)
 
     def forward(self, x):
-        x = x.unsqueeze(1)
-        for layer in self.layers:
-            x = layer(x)
-            x = self.dropout(x)
-        return self.linear(x)
+        return self.layers(x)
 
 
-class NeuralAdditiveModel(torch.nn.Module):
-    def __init__(self, input_size: int, shallow: bool):
+class NeuralAdditiveModel(nn.Module):
+    def __init__(self, no_features, dropout_rate = .0, feature_dropout = .0, use_exu = False):
         super().__init__()
-        self.input_size = input_size
-
-        self.feature_nns = torch.nn.ModuleList([
-            FeatureNN(shallow)
-            for i in range(input_size)
-        ])
-        self.feature_dropout = torch.nn.Dropout(p=0)
-        self.bias = torch.nn.Parameter(torch.zeros(1))
-
+        self.no_features = no_features
+        feature_nets = [FeatureNet(dropout_rate, use_exu) for _ in range(no_features)]
+        self.feature_nets = nn.ModuleList(feature_nets)
+        self.feature_drop = nn.Dropout(feature_dropout)
+        self.bias = torch.nn.Parameter(torch.zeros(1,), requires_grad=True)
+            
     def forward(self, x):
-        f_out = torch.cat(self._feature_nns(x), dim=-1)
-        f_out = self.feature_dropout(f_out)
+        y = []
+        for i in range(self.no_features):
+            o = self.feature_nets[i](x[:,i].unsqueeze(1))
+            y.append(o)
+        y = torch.cat(y, 1)
+        y = self.feature_drop(y)
+        out = torch.sum(y, axis = -1) + self.bias
+        return out, y
+    
+    
+    
 
-        return f_out.sum(axis=-1) + self.bias, f_out
-
-    def _feature_nns(self, x):
-        return [self.feature_nns[i](x[:, i]) for i in range(self.input_size)]
     
 
 def _np_to_tensor(arr):
@@ -123,28 +113,25 @@ class NAM(BaseEstimator):
     def __init__(self,
                  shallow=False,
                  nn_weight_decay=0,
+                 nn_dropout=0,
 
                  es = True,
-                 es_validation_set_size = None,
-                 es_give_up_after_nepochs = 10,
+                 es_validation_set_size = 0.1,
                  es_splitter_random_state = 0,
 
                  nepoch=200,
+                 optim_lr=1e-3,
 
-                 batch_initial=300,
-                 batch_step_multiplier=1.4,
-                 batch_step_epoch_expon=2.0,
-                 batch_max_size=1000,
-
-                 optim_lr=1e-2,
-
-                 dataloader_workers=1,
+                 batch_size=1024,
                  batch_test_size=2000,
+                 
+                 dataloader_workers=1,
                  gpu=False,
                  verbose=5,
 
                  scale_data=True,
-                 feature_penalty=0.0
+                 feature_penalty=0.0,
+                 feature_dropout=0.0
                  ):
 
         for prop in dir():
@@ -191,10 +178,7 @@ class NAM(BaseEstimator):
         if self.scale_data:
             x_train = self.scaler.transform(x_train)
 
-        assert(self.batch_initial >= 1)
-        assert(self.batch_step_multiplier > 0)
-        assert(self.batch_step_epoch_expon > 0)
-        assert(self.batch_max_size >= 1)
+        assert(self.batch_size >= 1)
         assert(self.batch_test_size >= 1)
 
         y_dtype = "f4"
@@ -203,12 +187,8 @@ class NAM(BaseEstimator):
 
         range_epoch = range(nepoch)
         if self.es:
-            es_validation_set_size = self.es_validation_set_size
-            if es_validation_set_size is None:
-                es_validation_set_size = round(
-                    min(x_train.shape[0] * 0.10, 5000))
             splitter = ShuffleSplit(n_splits=1,
-                test_size=es_validation_set_size,
+                test_size=self.es_validation_set_size,
                 random_state=self.es_splitter_random_state)
             index_train, index_val = next(iter(splitter.split(x_train,
                 y_train)))
@@ -232,9 +212,7 @@ class NAM(BaseEstimator):
             batch_test_size = min(self.batch_test_size, inputv_val.shape[0])
             self.loss_history_validation = []
 
-        batch_max_size = min(self.batch_max_size, inputv_train.shape[0])
         self.loss_history_train = []
-
         start_time = time()
 
         self.actual_optim_lr = self.optim_lr
@@ -245,11 +223,9 @@ class NAM(BaseEstimator):
         )
         err_count = 0
         es_penal_tries = 0
+        
         for _ in range_epoch:
-            self.cur_batch_size = int(min(batch_max_size,
-                self.batch_initial +
-                self.batch_step_multiplier *
-                self.epoch_count ** self.batch_step_epoch_expon))
+            self.cur_batch_size = min(self.batch_size, inputv_train.shape[0])
 
             permutation = np.random.permutation(target_train.shape[0])
             inputv_train = torch.from_numpy(inputv_train[permutation])
@@ -261,6 +237,8 @@ class NAM(BaseEstimator):
                 self.neural_net.train()
                 self._one_epoch(True, self.cur_batch_size, inputv_train,
                                 target_train, optimizer)
+                optimizer.param_groups[0]['lr'] *= 0.995
+                self.epoch_count += 1
 
                 if self.es:
                     self.neural_net.eval()
@@ -273,56 +251,19 @@ class NAM(BaseEstimator):
                         best_state_dict = deepcopy(best_state_dict)
                         es_tries = 0
                         if self.verbose >= 2:
-                            print("This is the lowest validation loss",
-                                  "so far.")
+                            print("This is the lowest validation loss so far.")
                         self.best_loss_history_validation = avloss
                     else:
                         es_tries += 1
-
-                    if (es_tries == self.es_give_up_after_nepochs
-                        // 3 or
-                        es_tries == self.es_give_up_after_nepochs
-                        // 3 * 2):
                         if self.verbose >= 2:
-                            print("No improvement for", es_tries,
-                             "tries")
-                            print("Decreasing learning rate by half")
-                            print("Restarting from best route.")
-                        optimizer.param_groups[0]['lr'] *= 0.5
-                        self.neural_net.load_state_dict(
-                            best_state_dict)
-                    elif es_tries >= self.es_give_up_after_nepochs:
-                        self.neural_net.load_state_dict(
-                            best_state_dict)
-                        if self.verbose >= 1:
-                            print(
-                                "Validation loss did not improve after",
-                                self.es_give_up_after_nepochs,
-                                "tries. Stopping"
-                            )
-                        break
+                            print(f'No improvement for {es_tries} epochs. Restarting from best route.')
+                        self.neural_net.load_state_dict(best_state_dict)
 
-                self.epoch_count += 1
-            except RuntimeError as err:
-                #if self.epoch_count == 0:
-                #    raise err
-                if self.verbose >= 2:
-                    print("Runtime error problem probably due to",
-                           "high learning rate.")
-                    print("Decreasing learning rate by half.")
-
-                self._construct_neural_net()
-                if self.gpu:
-                    self.move_to_gpu()
-                self.actual_optim_lr /= 2
-                optimizer = optimm(
-                    self.neural_net.parameters(),
-                    lr=self.actual_optim_lr,
-                    weight_decay=self.nn_weight_decay
-                )
-                self.epoch_count = 0
-
-                continue
+                    if es_tries > 10:
+                        if self.verbose >= 2:
+                            print("Validation loss did not improve after 10 tries. Stopping.")
+                            break
+                        
             except KeyboardInterrupt:
                 if self.epoch_count > 0 and self.es:
                     print("Keyboard interrupt detected.",
@@ -371,7 +312,7 @@ class NAM(BaseEstimator):
                 batch_sizes.append(batch_actual_size)
 
                 if is_train:
-                    loss += self.feature_penalty * (thetas ** 2).sum() # Add feature penalty
+                    loss += self.feature_penalty * (thetas ** 2).mean() # Add feature penalty
                     loss.backward()
                     optimizer.step()
 
@@ -412,7 +353,6 @@ class NAM(BaseEstimator):
                 batch_actual_size = inputv_this.shape[0]
                 output, _ = self.neural_net(inputv_this)
                 
-                print(output, target_this)
                 loss = self.criterion(output, target_this)
 
                 loss_vals.append(loss.data.item())
@@ -441,7 +381,10 @@ class NAM(BaseEstimator):
 
     def _construct_neural_net(self):
         
-        self.neural_net = NeuralAdditiveModel(input_size=self.x_dim, shallow=self.shallow)
+        self.neural_net = NeuralAdditiveModel(no_features=self.x_dim,
+                                              dropout_rate=self.nn_dropout,
+                                              use_exu=self.shallow, 
+                                              feature_dropout=self.feature_dropout)
 
         
         
@@ -463,6 +406,18 @@ if __name__ == "__main__":
     from matplotlib import pyplot as plt
     matplotlib.rcParams['text.usetex'] = True
     
+    # Sanity check
+    from sklearn.datasets import fetch_california_housing
+    dataset = fetch_california_housing()
+    x = dataset.data
+    y = dataset.target
+    
+    pred = cross_val_predict(NAM(shallow=False, optim_lr=0.00674, feature_penalty=0.001, 
+                                  nn_weight_decay=10**-6, verbose=5), 
+                              x, y, cv=KFold(n_splits=5, shuffle=True))
+    print(pred[:5], y[:5])
+    print(f'Mean squared error: {np.sqrt(mean_squared_error(y, pred))}. Reported in the paper: 0.562')
+    
     
     # Housing
     print('Housing...')
@@ -471,16 +426,95 @@ if __name__ == "__main__":
     x = dataset.iloc[:, range(0, dataset.shape[1] - 1)].values
     y = dataset.iloc[:, -1].values
 
-    '''
+    parameters = [{'shallow': [True, False], 'feature_dropout': [0, 0.1, 0.2], 'feature_penalty': [0, 0.1, 0.2]}]
+    t0 = time()
+    pred = cross_val_predict(GridSearchCV(NAM(verbose=0), parameter, scoring='neg_mean_squared_error', iid=False, 
+                             cv=KFold(n_splits=2, shuffle=False, random_state=0)), x, y, cv=KFold(n_splits=5, shuffle=False))
+    t = time() - t0
+    
+    mse = mean_squared_error(y, pred)
+    mse_std = np.std((pred.flatten()-y)**2) / (len(y)**(1/2))
+    mae = mean_absolute_error(y, pred)
+    mae_std = np.std(abs(pred.flatten()-y)) / (len(y)**(1/2))
+
+    with open('fitted/housing_NAM4.pkl', 'wb') as f:
+        pickle.dump(pred, f, pickle.HIGHEST_PROTOCOL)
+    with open('results/housing_NAM4.txt', 'w') as f:
+        print([mse, mse_std, mae, mae_std, t], file=f)
+
+        
     # Superconductivity
     print('Superconductivity...')
     dataset = pd.read_csv('data/superconductivity.csv')
     dataset = dataset.sample(frac=1, random_state=0)
     x = dataset.iloc[:, range(0, dataset.shape[1] - 1)].values
     y = dataset.iloc[:, -1].values
-    '''
     
-    model = NAM(shallow=False, verbose=5)
-    model.fit(x, y)
-    print(model.predict(x[:5], return_thetas=False))
-    print(np.mean(np.abs(model.predict(x) - y)))
+    x, x_test, y, y_test = train_test_split(x, y, test_size=0.1, shuffle=False, random_state=0)
+    x_train, x_val, y_train, y_val = train_test_split(x, y, test_size=0.1, shuffle=False, random_state=0)
+    
+    output = []
+    best_mse = np.infty
+    t0 = time()
+    print('NLS\'s...')
+    for shallow in [False]:
+        print('Current model is shallow:', shallow)
+        for dropout in [0]:
+            print('Current dropout:', dropout)
+            for penalty in [0.2]:
+                print('Current penalty:', penalty)
+                model = NAM(shallow=shallow, verbose=2, feature_dropout=dropout, feature_penalty=penalty).fit(x_train, y_train)
+                pred = model.predict(x_val)
+                mse = mean_squared_error(y_val, pred)
+                if mse < best_mse:
+                    best_mse = mse
+                    best_model = model
+    best_pred = best_model.predict(x_test)
+    best_mse = mean_squared_error(y_test, best_pred)
+    mse_std = np.std((best_pred.flatten()-y_test)**2) / (len(y_test)**(1/2))
+    mae = mean_absolute_error(y_test, best_pred)
+    mae_std = np.std(abs(best_pred.flatten()-y_test)) / (len(y_test)**(1/2))
+    output.append([best_model, best_mse, mse_std, mae, mae_std, time()-t0])
+    
+    with open('fitted/superconductivity_NAM2.pkl', 'wb') as f:
+        pickle.dump(output, f, pickle.HIGHEST_PROTOCOL)
+    with open('results/superconductivity_NAM2.txt', 'w') as f:
+        print(output, file=f)
+
+        
+    # BlogFeedback
+    print('Blog...')
+    dataset = pd.read_csv('data/blog feedback.csv')
+    x = dataset.iloc[:, range(0, dataset.shape[1] - 1)].values
+    y = dataset.iloc[:, -1].values
+    
+    x, x_test, y, y_test = train_test_split(x, y, test_size=0.1, shuffle=False, random_state=0)
+    x_train, x_val, y_train, y_val = train_test_split(x, y, test_size=0.1, shuffle=False, random_state=0)
+    
+    output = []
+    best_mse = np.infty
+    t0 = time()
+    print('NLS\'s...')
+    for shallow in [True, False]:
+        print('Current model is shallow:', shallow)
+        for dropout in [0, 0.1, 0.2]:
+            print('Current dropout:', dropout)
+            for penalty in [0, 0.1, 0.2]:
+                print('Current penalty:', penalty)
+                model = NAM(shallow=shallow, verbose=3, optim_lr=1e-2, feature_dropout=dropout, feature_penalty=penalty).fit(x_train, y_train)
+                pred = model.predict(x_val)
+                mse = mean_squared_error(y_val, pred)
+                if mse < best_mse:
+                    best_mse = mse
+                    best_model = model
+    best_pred = best_model.predict(x_test)
+    best_mse = mean_squared_error(y_test, best_pred)
+    mse_std = np.std((best_pred.flatten()-y_test)**2) / (len(y_test)**(1/2))
+    mae = mean_absolute_error(y_test, best_pred)
+    mae_std = np.std(abs(best_pred.flatten()-y_test)) / (len(y_test)**(1/2))
+    output.append([best_model, best_mse, mse_std, mae, mae_std, time()-t0])
+
+    with open('fitted/blogfeedback_NAM.pkl', 'wb') as f:
+        pickle.dump(output, f, pickle.HIGHEST_PROTOCOL)
+    with open('results/blogfeedback_NAM.txt', 'w') as f:
+        print(output, file=f)
