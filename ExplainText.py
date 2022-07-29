@@ -5,16 +5,18 @@ from matplotlib import pyplot as plt
 
 
 def label_bar(rects, ax, labels=None):
-    colors = ['blue', 'orange']
-    for rect, color in zip(rects, colors):
+    for rect in rects:
         width = rect.get_width()
-        rect.set_color('r')
+        if width < 0.02:
+            ha = 'left'
+        else:
+            ha = 'center'
         ax.annotate('{:3.2f}'.format(width),
-                    xy=(rect.get_width() / 2, rect.get_y() - 0.2 + rect.get_height() / 2),
-                    xytext=(0, 3),  # 3 points vertical offset
-                    textcoords="offset points",
-                    ha='center', va='bottom',
-                    size=30)
+                    xy=(rect.get_width() / 2, rect.get_y() + rect.get_height() / 2),
+                    # xytext=(0, 3),  # 3 points vertical offset
+                    # textcoords="offset points",
+                    ha=ha, va='center',
+                    size=20)
 
 
 def simpleaxis(ax):
@@ -95,7 +97,7 @@ class ExplainText(object):
 
     def explain_graphical(self, x_explain, document, num_features=10):
         exp = self.get_text_explanation(x_explain, document, num_features=num_features)
-        fig, axs = plt.subplots(1, 3, figsize=(15, 5))
+        fig, axs = plt.subplots(1, 2, figsize=(15, 5))
         rects1 = axs[0].barh(self.class_names, exp['prediction_proba'])
         axs[0].set_xticks([])
         colors = ['blue', 'orange']
@@ -121,3 +123,59 @@ class ExplainText(object):
         axs[2].set_title('Document to Explain')
         plt.subplots_adjust(left=None, bottom=None, right=None, top=None, wspace=0.5, hspace=None)
         return fig, axs
+    
+    def explain_from_list(self, exp, document, prob):
+        fig, axs = plt.subplots(1, 2, figsize=(8, 4))
+        colors = ['green', 'red']
+        rects1 = axs[0].barh(self.class_names, prob, height=0.8)
+        label_bar(rects1, axs[0])
+        rects1[0].set_color('red')
+        rects1[1].set_color('green')
+        axs[0].set_xticks([])
+        axs[0].set_title('Prediction probabilities', fontsize=20)
+        axs[0].tick_params(axis='y', labelsize=20)
+        axs[0].set_ylim(-2, 1.5)
+        simpleaxis(axs[0])
+        
+        names = list(exp.keys())
+        vals = list(exp.values())
+        vals = vals[::-1]
+        names = names[::-1]
+        colors = ['green' if x > 0 else 'red' for x in vals]
+        pos = np.arange(len(vals))
+        rects2 = axs[1].barh(pos, vals, align='center', color=colors)
+        label_bar(rects2, axs[1])
+        axs[1].set_xticks([])
+        axs[1].set_yticks(pos)
+        axs[1].set_yticklabels(names)
+        axs[1].set_title('Features importance', fontsize=20)
+        axs[1].tick_params(axis='y', labelsize=15)
+        simpleaxis(axs[1])
+
+        plt.tight_layout()
+        return fig, axs
+
+    
+if __name__ == "__main__":
+    
+    from sklearn.datasets import fetch_20newsgroups
+    categories = ['alt.atheism', 'soc.religion.christian']
+    newsgroups_train = fetch_20newsgroups(subset='train', categories=categories)
+    newsgroups_test = fetch_20newsgroups(subset='test', categories=categories)
+    class_names = ['christian', 'atheism']
+    
+    idx = 83
+    document = newsgroups_test.data[83]
+    prob = [0.414, 1 - 0.414]
+    explanation = [(u'Posting', 0.15748303818990594), 
+                   (u'Host', 0.13220892468795911), 
+                   (u'NNTP', 0.097422972255878093), 
+                   (u'edu', 0.051080418945152584), 
+                   (u'have', 0.010616558305370854), 
+                   (u'There', 0.0099743822272458232)]
+    explanation = dict(explanation)
+    
+    explainer = ExplainText(model=None, class_names=class_names, names_features=None)
+    f, axs = explainer.explain_from_list(exp=explanation, document=document, prob=prob)
+    f.savefig('img/lime.pdf')
+    
